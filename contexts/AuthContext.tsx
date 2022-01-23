@@ -1,25 +1,7 @@
 import { useRouter } from "next/router";
 import {  createContext, ReactNode, useState } from "react";
+import {setCookie} from 'nookies'
 import { api } from "../services/api";
-
-type User = {
-  email:string;
-  permissions: string[];
-  roles: string[];
-
-}
-type SingInCredentials = {
-  email:string;
-  password:string;
-}
-type AuthContextData = {
-  singIn: (credentials:SingInCredentials) => Promise<void>;
-  isAuthenticated: boolean;
-  user: User;
-}
-type AuthProviderProps = {
-  children: ReactNode
-}
 
 export const AuthContext = createContext({} as AuthContextData)
 
@@ -39,6 +21,14 @@ export function AuthProvider({children}: AuthProviderProps){
 
       const {token, refreshToken, roles, permissions} = response.data
 
+      setCookie(undefined,"next-auth.token",token,{
+        path:"/",
+        maxAge:60 * 60 * 24 * 30 // 30 Days
+      })
+      setCookie(undefined,"next-auth.refreshToken",refreshToken,{
+        path:"/",
+        maxAge:60 * 60 * 24 * 30 // 30 Days
+      })
       setUser({
         email,
         roles,
@@ -57,4 +47,23 @@ export function AuthProvider({children}: AuthProviderProps){
       {children}
     </AuthContext.Provider>
   )
+}
+
+type User = {
+  email:string;
+  permissions: string[];
+  roles: string[];
+
+}
+type SingInCredentials = {
+  email:string;
+  password:string;
+}
+type AuthContextData = {
+  singIn: (credentials:SingInCredentials) => Promise<void>;
+  isAuthenticated: boolean;
+  user: User;
+}
+type AuthProviderProps = {
+  children: ReactNode
 }
