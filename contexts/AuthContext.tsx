@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
-import {  createContext, ReactNode, useState } from "react";
-import {setCookie} from 'nookies'
+import {  createContext, ReactNode, useEffect, useState } from "react";
+import {setCookie, parseCookies} from 'nookies'
 import { api } from "../services/api";
 
 export const AuthContext = createContext({} as AuthContextData)
@@ -12,6 +12,16 @@ export function AuthProvider({children}: AuthProviderProps){
   const router = useRouter()
   const isAuthenticated = !!user
 
+  useEffect(()=>{
+    const {'next-auth.token':token} = parseCookies()
+    if (token){
+      api.get("/me").then(response=>{
+        const {email, permissions, roles} = response.data
+
+        setUser({email, permissions, roles})
+      })
+    }
+  },[])
   async function singIn({email,password}:SingInCredentials){
     try {
       const response = await api.post("/sessions",{
@@ -33,7 +43,9 @@ export function AuthProvider({children}: AuthProviderProps){
         email,
         roles,
         permissions
-      })
+      })  
+      api.defaults.headers["Authorization"] = `Bearer ${token}`
+      
 
       router.push("/dashboard")
     } catch (error) {
