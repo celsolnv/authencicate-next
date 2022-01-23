@@ -8,7 +8,7 @@ export default function Dashboard(){
   useEffect(()=>{
     api.get("/me").then(response=>{
       console.log("Dash", response.data)
-    })
+    }).catch((error)=>console.log(error))
   },[])
   return(
     <div>

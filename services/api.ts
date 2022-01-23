@@ -1,5 +1,6 @@
 import axios, {AxiosError} from 'axios'
 import {parseCookies, setCookie} from 'nookies'
+import { singOut } from '../contexts/AuthContext'
 
 let cookies = parseCookies() 
 let isRefreshing = false
@@ -18,7 +19,7 @@ api.interceptors.response.use(response =>{
 },(error:AxiosError)=>{
   
   if(error.response.status === 401){
-    if(error.response?.data.code === "token.expired"){
+    if(error.response.data?.code === "token.expired"){
       if (!isRefreshing){
         isRefreshing = true
         cookies = parseCookies()
@@ -61,8 +62,10 @@ api.interceptors.response.use(response =>{
         })
       })
     } else{
-      // delogar
+      singOut()
     }
   }
+
+  return Promise.reject(error)
 
 })
