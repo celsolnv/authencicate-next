@@ -1,3 +1,4 @@
+import { AuthTokenError } from "./erros/AuthTokenError";
 import axios, { AxiosError } from "axios";
 import { parseCookies, setCookie } from "nookies";
 import { singOut } from "../contexts/AuthContext";
@@ -20,11 +21,12 @@ export function setupApi(ctx = undefined) {
       return response;
     },
     (error: AxiosError) => {
-      if (error.response.status === 401) {
+      // console.log(error);
+      if (error.response?.status === 401) {
         if (error.response.data?.code === "token.expired") {
           if (!isRefreshing) {
             isRefreshing = true;
-            cookies = parseCookies();
+            cookies = parseCookies(ctx);
 
             const { "next-auth.refreshToken": refreshToken } = cookies;
 
@@ -78,7 +80,11 @@ export function setupApi(ctx = undefined) {
             });
           });
         } else {
-          singOut();
+          if (process.browser) {
+            singOut();
+          } else {
+            return Promise.reject(new AuthTokenError());
+          }
         }
       }
 
