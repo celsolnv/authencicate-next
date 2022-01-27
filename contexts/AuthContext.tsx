@@ -5,18 +5,38 @@ import { api } from "../services/apiClient"
 
 export const AuthContext = createContext({} as AuthContextData)
 
+let authChanel:BroadcastChannel
+
 export function singOut(){
   destroyCookie(undefined,"next-auth.token")
   destroyCookie(undefined,"next-auth.refreshToken")
 
+  authChanel.postMessage('singOut')
   Router.push("/")
 }
+
 
 export function AuthProvider({children}: AuthProviderProps){
 
   const [user,setUser] = useState<User>()
   const isAuthenticated = !!user
 
+  useEffect(()=>{
+    authChanel = new BroadcastChannel('auth')
+
+    authChanel.onmessage = message =>{
+      console.log(message)
+      switch(message.data){
+        case 'singOut':
+          singOut();
+          break;
+        default:
+          break
+      }
+      
+    }
+
+  },[])
   useEffect(()=>{
     const {'next-auth.token':token} = parseCookies()
     if (token){
@@ -29,6 +49,7 @@ export function AuthProvider({children}: AuthProviderProps){
       })
     }
   },[])
+
   async function singIn({email,password}:SingInCredentials){
     try {
       const response = await api.post("/sessions",{
@@ -54,6 +75,7 @@ export function AuthProvider({children}: AuthProviderProps){
       api.defaults.headers["Authorization"] = `Bearer ${token}`
       
       Router.push("/dashboard")
+
     } catch (error) {
       
     }
@@ -61,7 +83,7 @@ export function AuthProvider({children}: AuthProviderProps){
 
   }
   return(
-    <AuthContext.Provider value={{singIn,isAuthenticated, user}}>
+    <AuthContext.Provider value={{singIn,singOut,isAuthenticated, user}}>
       {children}
     </AuthContext.Provider>
   )
@@ -79,6 +101,7 @@ type SingInCredentials = {
 }
 type AuthContextData = {
   singIn: (credentials:SingInCredentials) => Promise<void>;
+  singOut: () => void;
   isAuthenticated: boolean;
   user: User;
 }
